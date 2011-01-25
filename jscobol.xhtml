@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<title></title>
+<script type="text/javascript" src="prototype.js"></script>
+<script type="text/javascript" src="token.js"></script>
+<script type="text/javascript" src="formatter.js"></script>
+<script type="text/javascript" src="lexer.js"></script>
+<script type="text/javascript" src="statement.js"></script>
+<script type="text/javascript" src="parser.js"></script>
+<script type="text/javascript" src="assembler.js"></script>
+<link rel="stylesheet" type="text/css" href="jscobol.css" />
+</head>
+<body style="background-color: #ffd9b3;">
+<form id="source_form">
+<div id="views">
+<p id="sourceview">
+<h2>ソースコード</h2>
+<textarea rows="24" cols="80" id="source" name="source">
+IDENTIFICATION      DIVISION.
+PROGRAM-ID.     PRIME.
+ENVIRONMENT         DIVISION.
+DATA                DIVISION.
+WORKING-STORAGE     SECTION.
+01 MAX_NUM     PIC 9(05).
+01 NUM         PIC 9(05).
+01 I           PIC 9(05).
+01 CHK         PIC 9(05).
+01 CHK_START   PIC 9(05).
+01 FLG         PIC 9(01).
+PROCEDURE           DIVISION.
+    DISPLAY "入力された値までの素数を出力します"
+    ACCEPT MAX_NUM
+
+    DISPLAY ""
+    DISPLAY "2 から " MAX_NUM " までの素数:"
+    DISPLAY ""
+
+    DISPLAY 2
+    PERFORM VARYING NUM FROM 3 BY 2 UNTIL NUM &gt; MAX_NUM
+      MOVE 0 TO FLG
+      MOVE NUM TO CHK_START
+      SUBTRACT CHK_START BY 2
+      PERFORM VARYING I FROM CHK_START BY -2 UNTIL I &lt; 3
+        MOVE NUM TO CHK
+        DIVIDE CHK BY I
+        MULTIPLY CHK BY I
+        IF NUM = CHK THEN
+          MOVE 1 TO FLG
+        END-IF
+      END-PERFORM
+      IF FLG = 0 THEN
+        DISPLAY NUM
+      END-IF
+    END-PERFORM
+
+    STOP RUN.
+</textarea>
+</p>
+
+<p id="buttons">
+<div class="step">
+<input type="button" id="lexer" value="字句解析" /> → 
+<input type="button" id="parse" value="構文解析" disabled="disabled" /> → 
+<input type="button" id="display" value="コード表示" disabled="disabled" /> → 
+<input type="submit" id="execute" value="実行" disabled="disabled" />
+</div>
+<input type="button" id="reset" value="リセット" />
+</p>
+
+<p id="consoleview">
+<h2>実行結果</h2>
+<textarea rows="24" cols="80" id="output" name="output"></textarea>
+</p>
+
+</div>
+</form>
+<script type="text/javascript">
+<![CDATA[
+Event.observe(window, 'load', function () {
+  var lexer = null, result = null, jscode = null;
+
+  function setStep(name) {
+    var buttons = ['lexer', 'parse', 'display', 'execute'];
+    var flag = true;
+    buttons.each(function (button) {
+      if (flag)
+        $(button).enable();
+      else
+        $(button).disable();
+
+      if (button == name) flag = false;
+    });
+  }
+
+  Event.observe('reset', 'click', function (event) {
+    Event.stop(event);
+    setStep('lexer');
+    $('output').clear();
+  });
+
+  Event.observe('lexer', 'click', function (event) {
+    Event.stop(event);
+    setStep('lexer');
+    $('output').clear();
+
+    lexer = new Lexer($F('source'));
+    lexer.each(function (token) {
+      $('output').value += token.toString(true) + '\n';
+    });
+
+    setStep('parse');
+  });
+
+  Event.observe('parse', 'click', function (event) {
+    Event.stop(event);
+    setStep('parse');
+    lexer.reset();
+
+    var parser = new Parser(lexer);
+    var output;
+
+    try {
+      result = parser.parse();
+      output = new Json.Formatter(result).value;
+    }
+    catch (e) {
+      output = e;
+    }
+
+    $('output').value = output;
+
+    setStep('display');
+  });
+
+  Event.observe('display', 'click', function (event) {
+    Event.stop(event);
+    setStep('display');
+
+    var asm = new Assembler(result);
+    jscode = asm.assemble();
+    $('output').value = jscode;
+
+    setStep('execute');
+  });
+
+  Event.observe('execute', 'click', function (event) {
+    Event.stop(event);
+    $('output').clear();
+    eval(jscode);
+  });
+});
+]]>
+</script>
+</body>
+</html>
