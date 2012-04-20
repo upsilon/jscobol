@@ -126,19 +126,20 @@ Event.observe(window, 'load', function () {
     lexer.reset();
 
     var parser = new Parser(lexer);
-    var output;
+    var output = '';
 
     try {
       result = parser.parse();
       output = new Json.Formatter(result).value;
+
+      setStep('display');
     }
     catch (e) {
       output = e;
     }
-
-    $('output').value = output;
-
-    setStep('display');
+    finally {
+      $('output').value = output;
+    }
   });
 
   Event.observe('display', 'click', function (event) {
