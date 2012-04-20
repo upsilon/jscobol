@@ -39,6 +39,11 @@ PROCEDURE           DIVISION.
     DISPLAY "2 から " MAX_NUM " までの素数:"
     DISPLAY ""
 
+    IF MAX_NUM &lt; 2 THEN
+      DISPLAY "エラー: 2 以上の整数を入力して下さい"
+      STOP RUN
+    END-IF
+
     DISPLAY 2
     PERFORM VARYING NUM FROM 3 BY 2 UNTIL NUM &gt; MAX_NUM
       MOVE 0 TO FLG
